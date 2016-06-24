@@ -33,7 +33,9 @@ end
 
 Given /^the following organisations exist:$/ do |organisations_table|
   organisations_table.hashes.each do |org|
-    Organisation.create! org
+    VCR.use_cassette("#{org["name"]}-#{org["postcode"]}") do
+      Organisation.create! org
+    end
   end
 end
 
@@ -96,6 +98,13 @@ And(/^a file exists:$/) do |table|
       csv << org.values
     end
   end
+end
+
+Given(/^the invitation instructions mail template exists$/) do
+  MailTemplate.create!(name: 'Invitation instructions',
+                       body: 'Nothing',
+                       footnote: 'Nothing',
+                       email: 'noemail@email.org')
 end
 
 

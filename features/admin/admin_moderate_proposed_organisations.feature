@@ -15,17 +15,20 @@ Feature: Admin moderates an organisation to be added to HarrowCN
     And a proposed organisation has been proposed by "registered_user-1@example.com"
     And I am signed in as an superadmin
 
+  @vcr
   Scenario: Superadmin sees proposed organisation and buttons
     And I visit the proposed organisation show page for the proposed organisation that was proposed
     Then I should see an "Accept Proposed Organisation" button
     And I should see a "Reject Proposed Organisation" button
 
+  @vcr
   Scenario: Superadmin accepts new organisation
     And I visit the proposed organisation show page for the proposed organisation that was proposed
     And I press "Accept"
     Then I should be on the show page for the organisation that was proposed
     And I should see "You have approved the following organisation"
 
+  @vcr
   Scenario: Registered user is notified when superadmin accepts proposed organisation
     Given the following proposed organisations exist:
       | name       | description             | address        | postcode | telephone | website               | email                         | donation_info        | non_profit |
@@ -35,6 +38,7 @@ Feature: Admin moderates an organisation to be added to HarrowCN
     And "registered_user-1@example.com" is an organisation admin of "Unfriendly"
     And I should see "A notification of acceptance was sent to registered_user-1@example.com"
 
+  @vcr
   Scenario: Unregistered user is invited when superadmin accepts proposed organisation
     Given the following proposed organisations exist:
       | name       | description             | address        | postcode | telephone | website               | email                      | donation_info        | non_profit |
@@ -46,33 +50,38 @@ Feature: Admin moderates an organisation to be added to HarrowCN
     And I set my password
     Then I should be on the show page for the organisation named "Unfriendly"
 
+  @vcr
   Scenario: Invalid email garners message when superadmin accepts proposed organisation
     Given the following proposed organisations exist:
       | name       | description             | address        | postcode | telephone | website               | email    | donation_info        | non_profit |
       | Unfriendly | Mourning loved ones     | 30 pinner road | HA5 4HZ  | 520800000 | http://unfriendly.org |  xyt     | www.pleasedonate.com | true       |
     And having accepted the proposed organisation named "Unfriendly", I see "No invitation email was sent because the email associated with Unfriendly, xyt, seems invalid"
 
+  @vcr
   Scenario: Blank email garners message when superadmin accepts proposed organisation
     Given the following proposed organisations exist:
       | name       | description             | address        | postcode | telephone | website               | email    | donation_info        | non_profit |
       | Unfriendly | Mourning loved ones     | 30 pinner road | HA5 4HZ  | 520800000 | http://unfriendly.org |          | www.pleasedonate.com | true       |
     And having accepted the proposed organisation named "Unfriendly", I see "No invitation email was sent because no email is associated with the organisation"
 
+  @vcr
   Scenario: Superadmin rejects new organisation
     And I visit the proposed organisation show page for the proposed organisation that was proposed
     And I press "Reject"
     Then I should be on the proposed organisations index page
     And the proposed organisation should have been rejected
 
+  @vcr
   Scenario: Superadmin finds list of proposed organisations
     Given the following proposed organisations exist:
       |proposer_email                | name       | description             | address        | postcode | telephone | website               | email                    | donation_info        | non_profit |
       |registered_user-2@example.com | Unfriendly | Mourning loved ones     | 30 pinner road | HA1 4HZ  | 520800000 | http://unfriendly.org | superadmin@unfriendly.xx | www.pleasedonate.com | true       |
       |registered_user-3@example.com | Friendly   | Bereavement             | 30 pinner road | HA1 4HZ  | 520800000 | http://friendly.org   | superadmin@friendly.xx   | www.pleasedonate.com | true       |
     And I visit the home page
-    And I click on the all proposed organisations link
+    And I click on the pending proposed organisations link
     Then I should see a view details link for each of the proposed organisations
 
+  @vcr
   Scenario: Superadmin views details of proposed organisations
     And the following categories exist:
       | name                     | charity_commission_id |
