@@ -1,4 +1,5 @@
-And(/^I submit a volunteer op "(.*?)", "(.*?)" on the "(.*?)" page$/) do |title, desc, org_name|
+regex = /^I submit a volunteer op "(.*?)", "(.*?)" on the "(.*?)" page$/
+And(regex) do |title, desc, org_name|
   org = Organisation.find_by_name(org_name)
   visit organisation_path org
   click_link "Create a Volunteer Opportunity"
@@ -8,7 +9,22 @@ And(/^I submit a volunteer op "(.*?)", "(.*?)" on the "(.*?)" page$/) do |title,
   click_on 'Create a Volunteer Opportunity'
 end
 
-Given(/^I run the import doit service( with a radius of (\d+\.?\d*) miles)?$/)do |override, radius|
+Given(/^I submit a volunteer op with address on the org page/) do |volunteer_ops_table|
+  volunteer_ops_table.hashes.each do |volunteer_op|
+    org = Organisation.find_by_name(volunteer_op['org_name'])
+    visit organisation_path org
+    click_link 'Create a Volunteer Opportunity'
+    expect(current_path).to eq new_organisation_volunteer_op_path org
+    fill_in 'Title', with: volunteer_op['title']
+    fill_in 'Description', with: volunteer_op['desc']
+    fill_in 'Address', with: volunteer_op['address']
+    fill_in 'Postcode', with: volunteer_op['postcode']
+    click_on 'Create a Volunteer Opportunity'
+  end
+end
+
+regex = /^I run the import doit service( with a radius of (\d+\.?\d*) miles)?$/
+Given(regex) do |override, radius|
   if override
     ImportDoItVolunteerOpportunities.with radius.to_f
   else
@@ -17,7 +33,10 @@ Given(/^I run the import doit service( with a radius of (\d+\.?\d*) miles)?$/)do
 end
 
 Given(/^there is a doit volunteer op named "(.*?)"$/) do |title|
-  VolunteerOp.create(title: title,description: 'description content', source: 'doit', organisation_id: 1)
+  VolunteerOp.create(title: title,
+                     description: 'description content',
+                     source: 'doit',
+                     organisation_id: 1)
 end
 
 Then(/^the doit volunteer op named "(.*?)" should be deleted$/) do |title|
@@ -25,7 +44,13 @@ Then(/^the doit volunteer op named "(.*?)" should be deleted$/) do |title|
 end
 
 Then(/^there should be (\d+) doit volunteer ops stored$/) do |count|
-  expect(VolunteerOp.count(source: 'doit')).to eq count.to_i
+  expect(VolunteerOp.where(source: 'doit').count).to eq count.to_i
+end
+
+Then(/^all imported volunteer ops have latitude and longitude coordinates$/) do
+  VolunteerOp.where(source: 'doit').all? do |op|
+    expect(op).to have_coordinates
+  end
 end
 
 Given(/^that the (.+) flag is (enabled|disabled)$/) do |feature, state|
@@ -52,11 +77,34 @@ Then(/^I should see a link to "(.*?)" page "(.*?)"$/) do |link, url|
   page.should have_link(link, :href => url)
 end
 
-Given(/^the map should show the do\-it opportunity titled (.*)$/) do |opportunity_title|
-  vol_op = VolunteerOp.find_by(title: opportunity_title)
-  expect(vol_op).not_to be_nil
-  icon = find_map_icon('vol_op', vol_op.id)
-  click_twice icon
-  expect(page).to have_css('.arrow_box')
-  expect(find('.arrow_box').text).to include(opportunity_title)
+When(/^I set new volunteer opportunity location to "(.*?)", "(.*?)"$/) do |addr, pc|
+  fill_in 'Address', with: addr
+  fill_in 'Postcode', with: pc
+  click_button 'Update a Volunteer Opportunity'
+end
+
+regex = /^I should see "(.*?)", "(.*?)", "(.*?)" and "(.*?)"$/
+Then(regex) do |title, desc, address, org|
+  expect(page).to have_content title
+  expect(page).to have_content desc
+  expect(page).to have_content address
+  expect(page).to have_content org
+end
+
+Then(/^I should open "(.*?)" in a new window$/) do |organisation|
+  number_of_windows = -> { page.driver.browser.window_handles.count }
+  expect { click_link(organisation) }.to change(&number_of_windows).by 1
+end
+
+Then(/^the Do-it word in the legend should be a hyperlink to the Do-it website$/) do
+  within('.map_legend') do
+    first, _, third = all('.key_text').to_a
+
+    expect(first).to have_link('Do-it', href: 'https://do-it.org/')
+    expect(third).to have_link('Do-it', href: 'https://do-it.org/')
+  end
+end
+
+Then(/^I should see a search form$/) do
+  expect(page).to have_css('form.volunteer-ops-search')
 end

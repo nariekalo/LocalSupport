@@ -20,6 +20,7 @@ require 'timecop'
 require 'billy/cucumber'
 
 Dir['../../spec/factories/*.rb'].each {|file| require_relative file }
+Dir[Rails.root.join('spec/support/matchers/*.rb')].each { |file| require file  }
 
 # https://github.com/jnicklas/capybara/commit/4f805d5a1c42da29ed32ab0371e24add2dc08af1
 Capybara.add_selector(:css) do
@@ -31,6 +32,7 @@ end
 # steps to use the XPath syntax.
 Capybara.default_selector = :css
 Capybara.default_wait_time = 3
+Capybara.asset_host = 'http://localhost:3000'
 
 Capybara.javascript_driver = :webkit
 Capybara::Webkit.configure do |config|
@@ -56,7 +58,6 @@ Billy.configure do |c|
 end
 Billy.proxy.reset_cache
 
-
 Capybara.register_driver :pg_billy do |app|
   options = {
     js_errors: false,
@@ -68,6 +69,8 @@ Capybara.register_driver :pg_billy do |app|
   }
   Capybara::Poltergeist::Driver.new(app, options)
 end
+
+ShowMeTheCookies.register_adapter(:pg_billy, ShowMeTheCookies::Poltergeist)
 
 Before('@billy') do
   Capybara.current_driver = :pg_billy
@@ -146,11 +149,21 @@ After('@in-production') do
   Rails.env = 'test'
 end
 
+def logger_with_no_output
+  logger = double('Logger').as_null_object
+  allow(Logger).to receive(:new).and_return(logger)
+end
+
+Before do
+  logger_with_no_output
+end
+
 After('@time_travel') do
   Timecop.return
 end
 
-After do |s| 
-  # Tell Cucumber to quit after this scenario is done - if it failed.
-  Cucumber.wants_to_quit = true if s.failed?
+# To be used in conjunction with rerun option, so that we don't return a failing
+# exit code until the second try fails
+at_exit do
+  exit 0 if ENV['NEVER_FAIL'] == 'true'
 end

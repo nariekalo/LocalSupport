@@ -33,7 +33,7 @@ class User < ActiveRecord::Base
     self.pending_organisation == org
   end
 
-  def confirm!
+  def confirm
     super
     make_admin_of_org_with_matching_email
   end
@@ -76,5 +76,9 @@ class User < ActiveRecord::Base
 
   def self.purge_deleted_users_where(query)
     User.deleted.delete_all(query)
+  end
+
+  def self.superadmin_emails
+    superadmins.pluck(:email)
   end
 end

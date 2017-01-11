@@ -1,3 +1,30 @@
+Getting Involved
+------------------
+
+Project work is organised via this Pivotal Tracker instance:
+
+
+https://www.pivotaltracker.com/n/projects/742821
+
+The `CURRENT` column is what people are currently working on - feel free to reach out to anyone working on those to see if they are interested in collaborating.
+
+`BACKLOG` column tasks are ordered by priority (according to the client) and have 1, 2 or 3 points indicating difficulty (3 high). You are most welcome to start any task in the backlog, but please do come and say hi in our Slack channel:
+
+https://agileventures.slack.com/messages/localsupport/
+
+You can ask questions in the PT tickets themselves, or in the slack instance.  If you're not getting a response, please do tag `@tansaku` in the slack channel.  That's Sam Joseph, the project manager who'll be happy to help, or direct you to someone who can. 
+
+There's also the `ICEBOX` column where if you see something interesting you want to work on you can start on that.  However please do ensure it has an estimate.  If it does not then please coordinate with the ProjectManager to get the story voted on to create an estimate.  This helps you get input on what it would take to get the story done as well as helping the team understand what it is you want to work on.
+
+It's also great to look through the current PRs to see what code people are submitting:
+
+https://github.com/AgileVentures/LocalSupport/pulls
+
+Leaving comments and +1s where appropriate.  For more general details on joining any AgileVentures project please see: 
+
+https://github.com/AgileVentures/AgileVentures/blob/master/JOINING_A_PROJECT.md
+
+
 Development Process
 ------------------
 
@@ -25,6 +52,8 @@ Please ensure that each commit in your pull request makes a single coherent chan
 This is a learning project and so we currently do NOT require developers to rebase their work into a single commit - in particular because this interferes with the history of comments in the pull request.
 
 Whatever you are working on, or however far you get please open a "Work in Progress" (WIP) [pull request](https://help.github.com/articles/creating-a-pull-request/) so that others in the team can comment on your approach.  Even if you hate your horrible code :-) please throw it up there; you'll get automated feedback on code style from [hound](https://houndci.com/) and we'll help guide your code to fit in with the rest of the project.
+
+###Git Comments
 
 On your final git commit please include a comment in this format:
 

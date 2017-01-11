@@ -17,6 +17,7 @@ When /^I visit the proposed organisation show page for the proposed organisation
   proposed_org = ProposedOrganisation.find_by(name: unsaved_proposed_organisation(User.first).name)
   visit proposed_organisation_path(proposed_org)
 end
+
 When(/^I visit "(.*?)"$/) do |path|
   visit path
 end
@@ -40,7 +41,6 @@ def paths(location)
     'invited users' => invited_users_report_path,
     'volunteer opportunities' => volunteer_ops_path,
     'volunteer opportunities search' => search_volunteer_ops_path,
-    'contributors' => contributors_path,
     'deleted users' => deleted_users_report_path,
     'reset password' => reset_pwd
   }[location]
@@ -207,4 +207,13 @@ Then(/^I should see an (active|inactive) home button in the header$/) do |active
     within('.nav.nav-pills.pull-right') do
       expect(page).to have_css("li#{active_class} > a[href='/']", :text => "Home")
     end
+end
+
+Then(/^I should see link "([^"]*)" targeting new page$/) do |link_name|
+     target_link = find_link(link_name)
+     expect(target_link[:target]).to eq '_blank'
+end
+
+When(/^I click column header "([^"]*)"$/) do |val|
+  find('th', :text => val).click()
 end
