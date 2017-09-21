@@ -1,13 +1,5 @@
 module ApplicationHelper
-  # from http://stackoverflow.com/questions/1293573/rails-smart-text-truncation
-  def smart_truncate(sentence, char_limit = 128)
-      sentence = sentence.to_s
-      size =0
-      sentence.split().reject do |word|
-        size+=word.size()
-        size>char_limit
-      end.join(" ")+(sentence.size()>char_limit ? " "+ "..." : "" )
-  end
+  include StringUtility
 
   def markdown(text)
     red_carpet = Redcarpet::Markdown.new(Redcarpet::Render::HTML, :autolink => true)
@@ -45,12 +37,12 @@ module ApplicationHelper
 
   def bootstrap_class_for flash_type
     case flash_type
-    when "warning"
-     "alert-warning"
-    when "notice"
-     "alert-success"
+    when 'warning'
+      'alert-warning'
+    when 'notice'
+      'alert-success'
     else
-      "alert-error"
+      'alert-danger'
     end
   end
 

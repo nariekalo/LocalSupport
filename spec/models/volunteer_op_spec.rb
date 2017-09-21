@@ -82,6 +82,15 @@ describe VolunteerOp, type: :model do
       end
     end
 
+    context 'reachskills org' do
+      let(:reachskills_org_name) { 'niceorg' }
+      let(:vol_op) { FactoryGirl.create(:reachskills_volunteer_op, reachskills_org_name: reachskills_org_name) }
+
+      it 'returns the reachskills org link' do
+        expect(vol_op.organisation_link).to eq "https://reachskills.org.uk/org/#{reachskills_org_name}"
+      end
+    end
+
     context 'local org' do
 
       let(:organisation) { FactoryGirl.create(:organisation, name: "Friendly") }
@@ -101,6 +110,16 @@ describe VolunteerOp, type: :model do
 
       it 'returns the doit op link' do
         expect(vol_op.link).to eq "https://do-it.org/opportunities/#{doit_op_id}"
+      end
+    end
+
+    context 'reachskills org' do
+
+      let(:reachskills_op_link) { 'https://reachskills.org.uk/opp/fundraising-volunteer' }
+      let(:vol_op) { FactoryGirl.create(:reachskills_volunteer_op, reachskills_op_link: reachskills_op_link) }
+
+      it 'returns the reachskills op link' do
+        expect(vol_op.link).to eq reachskills_op_link
       end
     end
 
@@ -211,6 +230,26 @@ describe VolunteerOp, type: :model do
       end
     end
   end
+  
+  describe '.add_coordinates' do
+    it 'returns volunteer ops with coordinates' do
+      org1 = create(:organisation, address: '', postcode: '', longitude: 77, latitude: 77)
+      org2 = create(:organisation, address: '', postcode: '', longitude: 62, latitude: 10)
+      
+      no_coord1 = build(:volunteer_op, longitude: nil, latitude: nil, organisation: org1)
+      no_coord2 = build(:volunteer_op, longitude: nil, latitude: nil, organisation: org2)
+      
+      res1 = no_coord1
+      res1.longitude = 77
+      res1.latitude = 77
+      
+      res2 = no_coord2
+      res1.longitude = 62
+      res1.latitude = 10
+
+      expect(VolunteerOp.add_coordinates([no_coord1, no_coord2])).to match_array([res1, res2])
+    end
+  end
 
   describe '.build_by_coordinates' do
     it 'returns volunteer ops grouped by coordinates' do
@@ -247,6 +286,11 @@ describe VolunteerOp, type: :model do
       d_vol_op1 = create(:doit_volunteer_op)
       d_vol_op2 = create(:doit_volunteer_op)
       expect(VolunteerOp.get_source([d_vol_op1, d_vol_op2])).to eq('doit')
+    end
+    it "returns 'reachskills' for different sources" do
+      r_vol_op1 = create(:reachskills_volunteer_op)
+      r_vol_op2 = create(:reachskills_volunteer_op)
+      expect(VolunteerOp.get_source([r_vol_op1, r_vol_op2])).to eq('reachskills')
     end
     it "returns 'mixed' for different sources" do
       l_vol_op1 = build(:volunteer_op, organisation_id: 1)

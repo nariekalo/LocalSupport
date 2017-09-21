@@ -1,9 +1,9 @@
 class VolunteerOpsController < ApplicationController
+  add_breadcrumb 'Volunteers', :root_url
   layout 'two_columns_with_map'
   before_action :set_organisation, only: [:new, :create]
   before_action :authorize, except: [:search, :show, :index]
-  before_action :set_volunteer_op, only: [:show, :edit]
-  before_action :set_tags, only: [:show]
+  prepend_before_action :set_volunteer_op, only: [:show, :edit]
 
   def search
     @query = params[:q]
@@ -19,77 +19,88 @@ class VolunteerOpsController < ApplicationController
   end
 
   def show
+    render template: 'pages/404', status: 404 and return if @volunteer_op.nil?
     @organisation = Organisation.friendly.find(@volunteer_op.organisation_id)
     organisations = Organisation.where(id: @organisation.id)
     @editable = current_user.can_edit?(@organisation) if current_user
     @markers = BuildMarkersWithInfoWindow.with(VolunteerOp.build_by_coordinates, self)
+    add_breadcrumb @organisation.name, organisation_path(@organisation)
+    add_breadcrumb @volunteer_op.title, :volunteer_op_path
   end
 
   def new
-    @volunteer_op = VolunteerOp.new
+    @volunteer_op = VolunteerOpForm.new
+    @can_publish_to_doit = true if current_user.superadmin?
   end
 
   def create
     params[:volunteer_op][:organisation_id] = @organisation.id
-    @volunteer_op = VolunteerOp.new(volunteer_op_params)
+    @volunteer_op = VolunteerOpForm.new(volunteer_op_params)
     result = @volunteer_op.save
-    result ? vol_op_redirect('Volunteer op was successfully created.') : render(:new)
+    result ? vol_op_redirect(t('volunteer.create_success')) : render(:new)
   end
 
   def edit
+    volunteer_op_record = VolunteerOp.find(params[:id])
+    if current_user.superadmin? && DoitTrace.published?(volunteer_op_record.id)
+      @can_publish_to_doit = true
+    end
+    @volunteer_op = VolunteerOpForm.new(volunteer_op: volunteer_op_record )
     organisations = Organisation.where(id: @volunteer_op.organisation_id)
     @organisation = organisations.first!
     @markers = BuildMarkersWithInfoWindow.with(VolunteerOp.build_by_coordinates, self)
   end
 
   def update
-    @volunteer_op = VolunteerOp.find(params[:id])
+    volunteer_op_record = VolunteerOp.find(params[:id])
+    @volunteer_op = VolunteerOpForm.new(volunteer_op: volunteer_op_record )
     @organisation = @volunteer_op.organisation
-    notice = 'Volunteer Opportunity was successfully updated.'
-    result = @volunteer_op.update_attributes(volunteer_op_params)
-    result ? vol_op_redirect(notice) : render(action: 'edit')
+    @volunteer_op.assign_attributes(volunteer_op_params)
+    result = @volunteer_op.save
+    result ? vol_op_redirect(t('volunteer.update_success')) : render(action: 'edit')
   end
 
   def destroy
     @volunteer_op = VolunteerOp.find(params[:id])
     @volunteer_op.destroy
     flash[:success] = "Deleted #{@volunteer_op.title}"
-
     redirect_to volunteer_ops_path
   end
 
   def volunteer_op_params
-    args = [:description, :title, :organisation_id, :address, :postcode]
+    args = [:description, :title, :organisation_id, :address, :postcode,
+            :post_to_doit, :advertise_start_date, :advertise_end_date,
+            :doit_org_id ]
     params.require(:volunteer_op).permit(*args)
   end
 
   private
 
   def displayed_volunteer_ops
-    VolunteerOp.order_by_most_recent.send(restrict_by_feature_scope)
+    vol_ops = VolunteerOp.order_by_most_recent.send(restrict_by_feature_scope)
+    VolunteerOp.add_coordinates(vol_ops)
   end
 
   def restrict_by_feature_scope
-    return :all if Feature.active?(:doit_volunteer_opportunities)
+    if Feature.active?(:doit_volunteer_opportunities) &&
+       Feature.active?(:reachskills_volunteer_opportunities)
+      return :all
+    end
+    return :doit if Feature.active?(:doit_volunteer_opportunities)
+    return :reachskills if Feature.active?(:reachskills_volunteer_opportunities)
     :local_only
   end
 
   def authorize
-    # set @organisation
-    # then can make condition:
-    # unless current_user.can_edit? organisation
-
-    unless org_owner?
-      flash[:error] = 'You must be signed in as an organisation owner or ' \
-                      'site superadmin to perform this action!'
-      (redirect_to '/') && return
-    end
+    return if org_owner?
+    flash[:error] = t('authorize.org_owner_or_superadmin')
+    redirect_to '/' and return
   end
 
   def org_owner?
     current_user.present? && (current_user.can_edit? org_independent_of_route)
   end
-  
+
   def org_independent_of_route
     organisation_set_for_nested_route? || organisation_for_simple_route
   end
@@ -112,6 +123,8 @@ class VolunteerOpsController < ApplicationController
 
   def set_volunteer_op
     @volunteer_op = VolunteerOp.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    @volunteer_op = nil
   end
 
   def vol_op_redirect(notice)
@@ -119,10 +132,12 @@ class VolunteerOpsController < ApplicationController
   end
 
   def meta_tag_title
+    return super unless @volunteer_op
     @volunteer_op.title
   end
 
   def meta_tag_description
+    return super unless @volunteer_op
     @volunteer_op.description
   end
 end

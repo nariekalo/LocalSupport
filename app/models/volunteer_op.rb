@@ -1,35 +1,45 @@
 class VolunteerOp < ActiveRecord::Base
+  include GlobalID::Identification
   acts_as_paranoid
   validates :title, :description, presence: true
   validates :organisation_id, presence: true, if: "source == 'local'"
   belongs_to :organisation
+  has_one :doit_trace
 
   geocoded_by :full_address
   after_validation :geocode, if: :address_complete?
   after_validation :clear_lat_lng, if: "source == 'local'"
 
   scope :order_by_most_recent, -> { order('updated_at DESC') }
-  scope :local_only, -> { where(source: 'local') }
-  scope :remote_only, -> { where.not(source: 'local') }
-
-
+  scope :local_only,           -> { where(source: 'local') }
+  scope :doit,                 -> { where(source: 'doit') }
+  scope :reachskills,          -> { where(source: 'reachskills') }
+  scope :remote_only,          -> { where.not(source: 'local') }
+  
+  def self.add_coordinates(vol_ops)
+    vol_op_with_coordinates(vol_ops)
+  end
+  
   def full_address
     "#{self.address}, #{self.postcode}"
   end
 
   def organisation_name
     return organisation.name if source == 'local'
-    doit_org_name
+    return doit_org_name if source == 'doit'
+    reachskills_org_name
   end
 
   def organisation_link
     return organisation if source == 'local'
-    "https://do-it.org/organisations/#{doit_org_link}"
+    return "https://do-it.org/organisations/#{doit_org_link}" if source == 'doit'
+    "https://reachskills.org.uk/org/#{parsed_reachskills_org_name}"
   end
 
   def link
     return self if source == 'local'
-    "https://do-it.org/opportunities/#{doit_op_id}"
+    return "https://do-it.org/opportunities/#{doit_op_id}" if source == 'doit'
+    reachskills_op_link
   end
 
   def self.search_for_text(text)
@@ -46,7 +56,8 @@ class VolunteerOp < ActiveRecord::Base
   end
 
   def self.build_by_coordinates
-    vol_ops = local_vol_op_with_coordinates + VolunteerOp.remote_only
+    local_vol_ops = vol_op_with_coordinates(VolunteerOp.local_only)
+    vol_ops = local_vol_ops + VolunteerOp.remote_only
     vol_op_by_coordinates = group_by_coordinates(vol_ops)
     Location.build_hash(vol_op_by_coordinates)
   end
@@ -64,15 +75,15 @@ class VolunteerOp < ActiveRecord::Base
   end
 
   private
-
+  
   def clear_lat_lng
     return if address_complete?
     self.longitude = nil
     self.latitude = nil
   end
 
-  def self.local_vol_op_with_coordinates
-    VolunteerOp.local_only.map { |volop| volop.send(:lat_lng_supplier) }
+  def self.vol_op_with_coordinates(vol_ops)
+    vol_ops.map { |op| op.source == 'local' ? op.send(:lat_lng_supplier) : op }
   end
 
   def lat_lng_supplier
@@ -91,6 +102,10 @@ class VolunteerOp < ActiveRecord::Base
     vol_ops.group_by do |vol_op|
       [vol_op.longitude, vol_op.latitude]
     end
+  end
+
+  def parsed_reachskills_org_name
+    reachskills_org_name.downcase.gsub(' ', '-')
   end
 
 end

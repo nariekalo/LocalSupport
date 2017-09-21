@@ -15,6 +15,7 @@ LocalSupport::Application.routes.draw do
   get '/user_reports/deleted' => 'user_reports#deleted', as: :deleted_users_report
   put 'user_reports/undo_delete/:id' => 'user_reports#undo_delete', as: :undo_delete_users_report
 
+  resources :doit_organisations, only: [:index]
   resources :pages, only: [:index, :new, :create, :edit]
   resources :volunteer_ops, :only => [:index, :edit, :show, :update, :destroy] do
     get 'search', on: :collection
@@ -25,6 +26,7 @@ LocalSupport::Application.routes.draw do
     resources :proposed_organisation_edits, :only => [:new, :show, :create, :update]
   end
   resources :users
+  resources :events, :only => [:new, :create, :show, :index]
   resources :proposed_organisations, :only => [:new, :create, :show, :index, :update, :destroy]
 
   # so that static pages are linked directly instead of via /pages/:id
@@ -84,7 +86,7 @@ LocalSupport::Application.routes.draw do
 
   # You can have the root of your site routed with "root"
   # just remember to delete public/index.html.
-  root :to => 'organisations#index'
+  root :to => 'volunteer_ops#index'
 
   # See how all your routes lay out with "rake routes"
 

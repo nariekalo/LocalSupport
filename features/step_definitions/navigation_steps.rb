@@ -42,7 +42,9 @@ def paths(location)
     'volunteer opportunities' => volunteer_ops_path,
     'volunteer opportunities search' => search_volunteer_ops_path,
     'deleted users' => deleted_users_report_path,
-    'reset password' => reset_pwd
+    'reset password' => reset_pwd,
+    'new event' => new_event_path,
+    'events' => events_path
   }[location]
 end
 
@@ -107,14 +109,14 @@ end
 
 And (/^I should see a full width layout$/) do
   within('#content') do
-    page.should have_css('#one_column.span12')
+    page.should have_css('#one_column.col-md-12')
   end
 end
 
 And (/^I should see a two column layout$/) do
   within('#content') do
-    page.should have_css('#column1.span6')
-    page.should have_css('#column2.span6')
+    page.should have_css('#column1.col-md-6')
+    page.should have_css('#column2.col-md-6')
   end
 end
 
@@ -128,6 +130,17 @@ end
 
 When /^I click "(.*)"$/ do |link|
   click_link(link)
+end
+
+When /^I click "(.*)" (.*) link$/ do |link, position|
+  case position
+  when 'breadcrumb'
+    click_link(link, :match => :first)
+  when 'organisation'
+    within('#column2') do
+       click_on link
+    end
+  end
 end
 
 When /^I click id "(.*)"$/ do |id|
